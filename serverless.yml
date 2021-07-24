@@ -1,0 +1,78 @@
+service:
+  name: "Ignite-Todos-Back"
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-dynamodb-local
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+  dynamodb:
+    stages:
+      - dev
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+  bucket: serverlestodosignite
+
+provider:
+  name: aws
+  region: sa-east-1
+  runtime: nodejs14.x
+  #iamRoleStatements:
+  #  - Effect: Allow
+  #    Action:
+  #      - dynamodb:*
+  #    Resource: "*"
+  #  - Effect: Allow
+  #    Action:
+  #      - s3:*
+  #    Resource: "*"
+
+functions:
+  createTodo:
+    handler: src/functions/createTodo.handle
+    events:
+      - http:
+          path: /todos/{user_id}
+          method: POST
+          cors: true
+    #iamRoleStatements:
+    #  - Effect: Allow
+    #    Action:
+    #      - dynamodb:Query
+    #      - dynamodb:PutItem
+    #    Resource: "arn:aws:dynamodb:${self.provider.region}:*:table/users_todos"
+  getTodos:
+    handler: src/functions/getTodos.handle
+    events:
+      - http:
+          path: /todos/{user_id}
+          method: GET
+          cors: true
+    #iamRoleStatements:
+    #  - Effect: Allow
+    #    Action:
+    #      - dynamodb:Query
+    #    Resource: "arn:aws:dynamodb:${self.provider.region}:*:table/users_todos"
+
+resources:
+  Resources:
+    dbTodoUsers:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: users_todos
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
